@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const MongoClient = require('mongodb').MongoClient
 const { MONGO_URL, MONGO_DB_NAME } = require('../config/db.config')
 
 const state = {
