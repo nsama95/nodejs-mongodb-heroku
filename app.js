@@ -29,7 +29,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors(corsOptions));
 
 // Routes
-app.use('/tickets', require('./routes/index'))
+app.use('/', require('./routes/index'))
 app.use('/user', require('./routes/user'))
 
 const port = process.env.PORT || 8080
