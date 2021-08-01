@@ -13,19 +13,7 @@ router.get('/', (req, res) => {
         });
 })
 
-//tickets por desperfectos
-router.get('/tickets-desperfectos', (req, res) => {
-    dbTickets = db.getInstance().collection("tickets")
-        .aggregate([
-            { $match: { motivo: "desperfecto" } },
-            { $group: { _id: "$descripcion",
-             cliente: 
-             { $push: "$cliente.nombre" } 
-            }}
-        ]).toArray((err, result) => {
-            if (err) return console.log(err)
-        })
-})
+
 //tickets con desperfectos
 router.get('/tickets-desperfectos', (req, res) => {
     dbTickets = db.getInstance();
