@@ -1,7 +1,7 @@
 const express = require('express')
 router = express.Router();
 const db= require('../models/db');
-const { query } = require('express');
+//const { query } = require('express');
 
 //todos los tickets
 router.get('/', (req, res) => {
@@ -18,16 +18,12 @@ router.get('/', (req, res) => {
 router.get('/tickets-desperfectos', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets")
-        .aggregate([
-            { $match: { motivo: "desperfecto" } },
-            { $group: { _id: "$descripcion",
-             cliente: 
-             { $push: "$cliente.nombre" } 
-            }}
-        ]).toArray((err, result) => {
-            if (err) return console.log(err)
-        })
+        .aggregate([{ $match: { motivo:{ $eq: "desperfecto" }}}])
+        .toArray(function (err, items) {
+            res.send(items);
+        });
 })
+
 //cantidad de tickets resueltos por desperfecto
 router.get('/tickets-desperfectos-cantidad', (req, res) => {
     dbTickets = db.getInstance();
@@ -36,7 +32,7 @@ router.get('/tickets-desperfectos-cantidad', (req, res) => {
             { $unwind: "$motivo" },
             {
                 $match: {
-                    "motivo": 'desperfecto' ,'estado.informe.estado':{ $nin: [false] }}   
+                    "motivo":"desperfecto"  ,"estado.informe.estado":false}   
             },
             { $group: { _id: "$descripcion",
             cantidad: 
