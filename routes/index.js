@@ -24,7 +24,7 @@ router.get('/tickets-desperfectos', (req, res) => {
         });
 })
 
-//cantidad de tickets resueltos por desperfecto
+// tickets resueltos por desperfecto
 router.get('/tickets-desperfectos-cantidad', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets")
@@ -32,15 +32,13 @@ router.get('/tickets-desperfectos-cantidad', (req, res) => {
             { $unwind: "$motivo" },
             {
                 $match: {
-                    "motivo":"desperfecto"  ,"estado.informe.estado":false}   
+                    "motivo":"desperfecto"  ,'estado.informe.estado': true }   
             },
-            { $group: { _id: "$descripcion",
-            cantidad: 
+            { $group: { _id: "$cliente.nombre",
+            resulto: 
             {$sum:
                 { $cond: [ {$eq:["$estado.informe.estado", true]}, 1, 0 ] }  } 
            }}
-        
-        
         ]).toArray((err, result) => {
             if (err) return console.log(err)
             res.send(result)
@@ -68,7 +66,7 @@ router.get('/tickets-desperfectos-cada-cuanto', (req, res) => {
     });
 })
 //zona de tickets desperfecto
-router.get('/zona-desperfectas', (req, res) => {
+router.get('/zona-desperfectos', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets")
         .aggregate([
@@ -90,7 +88,7 @@ router.get('/zona-desperfectas', (req, res) => {
         })
 })
 
-//zona con mas centros
+//zona del centro más concurrido
 router.get('/zona-centros', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets")
@@ -99,10 +97,10 @@ router.get('/zona-centros', (req, res) => {
                 $unwind: "$estado"
             },
             {
-                $project: {centro: 1, zona: "$estado.centro.direccion.localidad.nombre"}
+                $project: {"estado.centro.direccion.localidad.nombre": 1, zona: "$estado.centro.direccion.localidad.nombre"}
             },
             {
-                $group: {_id:"$zona", cantCentros: {$sum: 1}}
+                $group: {_id:"$zona", VecesConcurridas: {$sum: 1}}
             },
             {
                 $sort: {_id: -1}
@@ -125,13 +123,13 @@ router.get('/zona-clientes', (req, res) => {
                 $unwind: "$cliente"
             },
             {
-                $project: {centro: 1, zona: "$cliente.direccion.localidad.nombre"}
+                $project: {"cliente.direccion.localidad.nombre": 1, zona: "$cliente.direccion.localidad.nombre"}
             },
             {
                 $group: {_id:"$zona", cantClientes: {$sum: 1}}
             },
             {
-                $sort: {_id: -1}
+                $sort: {_id: 1}
             },
             {
                 $limit: 1
@@ -176,10 +174,8 @@ router.get('/empleado-mayor-tickets-sin-resolver', (req, res) => {
             },
             {
                 $project: {
-                    _id: 0,
-                    fecha: 1,
-                    descripcion: 1,
-                    "estado.informe.descripcion": 1,
+                    _id: '$estado.empleado.nombre',
+
                 }
             }
         ]).toArray((err, result) => {
@@ -193,29 +189,18 @@ router.get('/empleado-con-tickets', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets")
         .aggregate([
-            { $unwind: "$estado" },
-            {
-                $group: {
-                    _id: "$estado.empleado.nombre",
-                    empleado: {
-                        $first: {
-                            idEmpleado: "$estado.empleado.id",
-                            nombre: "$estado.empleado.nombre"
-                        }
-                    }
-                },
-            },
-            { $sort: { "empleado.id": 1 } },
             {
                 $lookup: {
-                    from: "clientes",
-                    as: "cliente",
-                    localField: "empleado.nombre",
-                    foreignField: "nombre"
+                    from: "tickets",
+                    as: "esCliente",
+                    localField: "estado.empleado.nombre",
+                    foreignField: "cliente.nombre",
+                   
                 }
             },
-            { $project: { "empleado.nombre": 1, "cliente.nombre": 1 } },
-            { $match: { cliente: { $not: { $size: 0 } } } }
+            { $sort: { "esCliente.cliente.nombre": -1} },
+            { $limit: 1 },
+            { $project: { _id: "$esCliente.cliente.nombre"} },
         ]).toArray((err, result) => {
             if (err) return console.log(err)
             res.send(result)
@@ -234,7 +219,7 @@ router.get('/cliente-con-mayor-tickets', (req, res) => {
                 $group: {_id : "$cliente", tickets : {$sum : 1}}
             },
             {
-                $sort: {cant: -1}
+                $sort: {'tickets': -1}
             },
             {
                 $limit: 1
@@ -245,8 +230,8 @@ router.get('/cliente-con-mayor-tickets', (req, res) => {
         })
 })
 
-//cuantos centros hay cerca de la ubicacion del cliente
-router.get('/centros-tickets', (req, res) => {
+//cliente ubicados a menos de 200km de un centros 
+router.get('/centros-clientes', (req, res) => {
     dbTickets = db.getInstance();
     dbTickets.collection("tickets").find().forEach((ticket) => 
     {
@@ -265,10 +250,12 @@ router.get('/centros-tickets', (req, res) => {
                 }
             }
     
-    ])}).toArray((err, result) => {
-            if (err) return console.log(err)
-            res.send(result)
-        })
+    ]).toArray((err, result) => {
+        if (err) return console.log(err)
+        res.send(result)
+    })
+
+})
 })
 
 module.exports = router;
