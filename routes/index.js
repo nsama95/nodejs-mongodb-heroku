@@ -257,5 +257,73 @@ router.get('/centros-clientes', (req, res) => {
 
 })
 })
+//Cliente ubicados cerca del centro-Lomas de zamora
+router.get('/clientes-lomas', (req, res) => {
+    dbTickets = db.getInstance();
+    dbTickets.collection("tickets").find({
+            "cliente.direccion.geometry":{
+                    $geoWithin:{
+                        $geometry:{
+                            "type": "Polygon",
+                            "coordinates": [
+                                [
+                                  [
+                                    -58.403964042663574,
+                                    -34.754923903974735
+                                  ],
+                                  [
+                                    -58.39701175689697,
+                                    -34.754923903974735
+                                  ],
+                                  [
+                                    -58.39701175689697,
+                                    -34.75130976110526
+                                  ],
+                                  [
+                                    -58.403964042663574,
+                                    -34.75130976110526
+                                  ],
+                                  [
+                                    -58.403964042663574,
+                                    -34.754923903974735
+                                  ]
+                                ]
+                              ]
+                              
+                        }
+                    }
+                }
+            }
+        )
+        .toArray((err, result) => {
+            if (err) return console.log(err)
+            console.log(result)
+            res.send(result)
+        })
+})
+
+//ticket con mas canales
+router.get('/cliente-plan', (req, res) => {
+    dbTickets = db.getInstance();
+    dbTickets.collection("tickets")
+        .aggregate([
+            {
+                $project: {canales: "$cliente.plan.canales"}
+            },
+            {
+                $group: {_id : "$canales", tickets : {$sum : 1}}
+            },
+            {
+                $sort: {'tickets': 1}
+
+            },
+            {
+                $limit: 1
+            }
+        ]).toArray((err, result) => {
+            if (err) return console.log(err)
+            res.send(result)
+        })
+})
 
 module.exports = router;
